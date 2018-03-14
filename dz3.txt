@@ -1,0 +1,101 @@
+1. (Функция - Вычисление факториала)
+ 
+CREATE FUNCTION Fucktorial(@num int)
+RETURNS int
+AS BEGIN
+   DECLARE @rezult int, @i int
+   SELECT @i=1,@rezult=1
+   WHILE @i<=@num BEGIN
+      SET @rezult=@rezult*@i
+      SET @i=@i+1
+   END
+   RETURN @rezult
+END
+
+=======================
+2. (Представление - Количество продуктов каждой категории)
+
+CREATE VIEW [dbo].[View_DZ3_2]
+AS
+SELECT dbo.Categories.Name, COUNT(dbo.Products.ID_Category) AS Expr1
+FROM	dbo.Categories JOIN dbo.Products
+		ON dbo.Categories.ID_Category = dbo.Products.ID_Category
+GROUP BY dbo.Categories.Name
+
+========================
+3. (Функция - Сумма продаж бренда)
+CREATE FUNCTION Get_brands_total_sale(@id_brand int)
+RETURNS 
+@total_sale TABLE(brand nvarchar(255), sale money) 
+AS BEGIN
+	INSERT INTO @total_sale
+		SELECT Brands.Name as Brand, SUM(Product_Orders.Price) as 'Total Sale'
+		FROM Product_Orders JOIN Orders 
+								ON Product_Orders.ID_Order = Orders.ID_Order
+							JOIN dbo.Status
+								ON Orders.ID_Status = Status.ID_Status AND Status not in ('Ждет подтверждения оплаты', 'Потерян', 'Возвращен')
+							JOIN Products
+								ON Products.ID_Product = Product_Orders.ID_Product
+							JOIN Brands
+								ON Brands.ID_Brand = Products.ID_Brand AND Brands.ID_Brand  = @id_brand
+		GROUP BY Brands.Name
+RETURN
+END
+GO
+
+
+======================
+4. (Функция - перевод с русского на транслит)
+
+CREATE FUNCTION TranslitString(@rus_str varchar(256))
+RETURNS varchar(256)
+AS BEGIN
+
+DECLARE @return varchar(256)
+
+SET @return = UPPER(@rus_str)
+SET @return = REPLACE(@return, 'АЙ', 'AY')
+SET @return = REPLACE(@return, 'ЕЙ', 'EY')
+SET @return = REPLACE(@return, 'ИЙ', 'IY')
+SET @return = REPLACE(@return, 'ОЙ', 'OY')
+SET @return = REPLACE(@return, 'УЙ', 'UY')
+SET @return = REPLACE(@return, 'ЫЙ', 'Y')
+SET @return = REPLACE(@return, 'ЭЙ', 'EY')
+SET @return = REPLACE(@return, 'ЮЙ', 'YUY')
+SET @return = REPLACE(@return, 'ЯЙ', 'YAY')
+SET @return = REPLACE(@return, 'А', 'A')
+SET @return = REPLACE(@return, 'Б', 'B')
+SET @return = REPLACE(@return, 'В', 'V')
+SET @return = REPLACE(@return, 'Г', 'G')
+SET @return = REPLACE(@return, 'Д', 'D')
+SET @return = REPLACE(@return, 'Е', 'E')
+SET @return = REPLACE(@return, 'Ё', 'E')
+SET @return = REPLACE(@return, 'Ж', 'ZH')
+SET @return = REPLACE(@return, 'З', 'Z')
+SET @return = REPLACE(@return, 'И', 'I')
+SET @return = REPLACE(@return, 'Й', 'I')
+SET @return = REPLACE(@return, 'К', 'K')
+SET @return = REPLACE(@return, 'Л', 'L')
+SET @return = REPLACE(@return, 'М', 'M')
+SET @return = REPLACE(@return, 'Н', 'N')
+SET @return = REPLACE(@return, 'О', 'O')
+SET @return = REPLACE(@return, 'П', 'P')
+SET @return = REPLACE(@return, 'Р', 'R')
+SET @return = REPLACE(@return, 'С', 'S')
+SET @return = REPLACE(@return, 'Т', 'T')
+SET @return = REPLACE(@return, 'У', 'U')
+SET @return = REPLACE(@return, 'Ф', 'F')
+SET @return = REPLACE(@return, 'Х', 'KH')
+SET @return = REPLACE(@return, 'Ц', 'TC')
+SET @return = REPLACE(@return, 'Ч', 'CH')
+SET @return = REPLACE(@return, 'Ш', 'SH')
+SET @return = REPLACE(@return, 'Щ', 'SHCH')
+SET @return = REPLACE(@return, 'Ы', 'Y')
+SET @return = REPLACE(@return, 'Э', 'E')
+SET @return = REPLACE(@return, 'Ю', 'IU')
+SET @return = REPLACE(@return, 'Я', 'IA')
+SET @return = REPLACE(@return, 'Ь', '')
+SET @return = REPLACE(@return, 'Ъ', '')
+
+RETURN @return
+END
