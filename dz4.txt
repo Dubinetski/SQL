@@ -1,0 +1,54 @@
+Добавить в базу интернет-магазина таблицу менеджеров. Покупка может осуществляться как через менеджера, так и без него. В таблице помимо информационных полей менеджера, должно содержаться поле его рейтинга.
+Разработать триггер, который изменяет рейтинг менеджера по следующим правилам:
+-	Рейтинг увеличивается на величину стоимости товара, если продажа была осуществлена через менеджера и покупка была произведена не по акции (без скидки)
+-	Рейтинг увеличивается на 50% величины стоимости товара, если продажа была осуществлена через менеджера и покупка была произведена по акции (со скидкой)
+-	Рейтинг уменьшается на двойную величину стоимости товара, если продажа была осуществлена не через менеджера, покупателем который ранее осуществлял покупки через этого менеджера
+
+
+CREATE TRIGGER menager_reit ON Product_Orders AFTER INSERT AS
+DECLARE @id_prod int, @id_order int,  @id_menager INT, @price money
+
+DECLARE CUR1 CURSOR FOR SELECT [ID_Product], [ID_Order], [ID_Menager], [Price] FROM inserted
+
+OPEN CUR1
+
+WHILE @@FETCH_STATUS=0
+BEGIN
+	FETCH NEXT FROM CUR1 INTO @id_prod, @id_order, @id_menager, @price
+	IF @id_menager != null 
+	BEGIN
+		IF EXISTS (SELECT * 
+				FROM inserted JOIN Products_Discounts ON Products_Discounts.ID_Product=@id_prod
+							  JOIN Discounts ON Products_Discounts.ID_Discount=Discounts.ID_Discount
+							  JOIN Orders ON Orders.ID_Order=@id_order
+				WHERE [Datetime] BETWEEN Discounts.Datetime_Begin and Discounts.Datetime_End )
+		BEGIN
+		SET @price /= 2
+		END
+	END
+	ELSE
+	BEGIN
+		IF NOT EXISTS (SELECT * 
+					   FROM Product_Orders JOIN Orders ON Product_Orders.ID_Order = Orders.ID_Order
+					   WHERE ID_Client = (SELECT ID_Client FROM Orders WHERE ID_Order=@id_order)
+							 AND ID_Menager = @id_menager )
+		BEGIN
+			SET @price *= -2
+		END
+		ELSE
+		BEGIN
+			SET @price = 0
+		END
+	END
+
+	UPDATE Managers
+	   SET Rating += @price
+	   WHERE Managers.ID_Menager = @id_menager
+END
+
+CLOSE CUR1
+DEALLOCATE CUR1
+ 
+ 
+ 
+ 
