@@ -1,0 +1,95 @@
+1.	Вывести всех клиентов магазина, имеющих фамилию, начинающуюся на ‘Не’
+Формат вывода: Полное имя,  Дата рождения
+
+SELECT FIO, Date_of_Birth
+FROM Clients
+Where FIO Like 'Не%'
+
+======================================
+2.	Вывести все холодильники белого цвета с массой менее 50 кг
+Формат вывода: Название, цвет, масса, цена
+
+SELECT Products.Name as 'Product', Colors.Name as 'Color', Weight, Price
+FROM Products JOIN Colors ON Products.ID_Color=Colors.ID_Color AND Colors.Name = 'White'
+WHERE Weight <50 AND 
+Products.ID_Category = (Select ID_Category FROM Categories WHERE Name= 'Холодильники')
+
+======================================
+3.	Вывести информацию обо всех клиентах, осуществивших покупки в магазине более чем на 100 у.е. за декабрь 2016 года в порядке убывания сумм
+Формат вывода: Имя, Сумма
+
+SELECT FIO , SUM(Product_Orders.Price) as 'Price'
+FROM Clients JOIN Orders ON Clients.ID_Client = Orders.ID_Client
+JOIN Product_Orders ON Orders.ID_Order = Product_Orders.ID_Order
+WHERE Orders.Datetime BETWEEN '2016-12-01' and '2016-12-31'
+GROUP BY FIO
+HAVING SUM(Product_Orders.Price) > 100
+ORDER BY FIO DESC
+
+======================================
+4.	Вывести информацию о самых дорогих товарах в каждой из категорий продуктов
+Формат вывода: Тип, Название товара, Цена
+
+SELECT DISTINCT Categories.Name as 'Категория', out_p.Name, out_p.price
+FROM Products as out_p JOIN Categories
+ON out_p.ID_Category = Categories.ID_Category
+WHERE Price = (SELECT MAX(Price) FROM Products as in_p WHERE out_p.ID_Category = in_p.ID_Category)
+
+======================================
+5.	Вывести информацию о производителях, товары которых ни разу не были приобретены за 2014 год (привести 3 различных варианта запроса)
+Формат вывода: Название производителя
+
+1 вариант:
+SELECT DISTINCT out_b.Name as 'Brand'
+FROM Brands as out_b
+WHERE NOT EXISTS 
+(SELECT *
+FROM Products JOIN Product_Orders ON Products.ID_Product = Product_Orders.ID_Product
+JOIN Orders ON Product_Orders.ID_Order= Orders.ID_Order AND Orders.Datetime BETWEEN '2014-01-01' and '2014-12-31' 
+WHERE Products.ID_Brand=out_b.ID_Brand)
+
+2 вариант:
+SELECT DISTINCT Brands.Name as 'Brand'
+FROM Brands JOIN Products ON Brands.ID_Brand=Products.ID_Brand
+JOIN Product_Orders ON Products.ID_Product = Product_Orders.ID_Product
+JOIN Orders ON Product_Orders.ID_Order= Orders.ID_Order AND Orders.Datetime NOT BETWEEN '2014-01-01' and '2014-12-31' 
+GROUP BY Brands.Name
+
+3 вариант:
+SELECT DISTINCT Brands.Name as 'Brand'
+FROM Brands 
+
+EXCEPT
+
+SELECT DISTINCT Brands.Name as 'Brand'
+FROM Brands JOIN Products ON Brands.ID_Brand=Products.ID_Brand
+JOIN Product_Orders ON Products.ID_Product = Product_Orders.ID_Product
+JOIN Orders ON Product_Orders.ID_Order= Orders.ID_Order AND Orders.Datetime BETWEEN '2014-01-01' and '2014-12-31' 
+GROUP BY Brands.Name
+
+======================================
+6.	Увеличить стоимость всех телевизоров на 15%
+
+UPDATE Products
+SET Price = Price*1.15
+WHERE ID_Category = (SELECT ID_Category From Categories where Name = N'Телевизоры')
+
+======================================
+7.	Создать скалярную функцию, которая возвращает размер скидки на товар в текущий момент времени.
+Параметры: id товара
+Возвращаемое значение: размер скидки
+
+CREATE FUNCTION Product_discount (@id int)
+RETURNS money 
+AS
+BEGIN
+DECLARE @rez money	
+SET @rez = 0
+
+SELECT @rez = [Percent]
+FROM Discounts JOIN Products_Discounts ON Discounts.ID_Discount=Products_Discounts.ID_Discount and ID_Product=@id
+WHERE GETDATE() BETWEEN Datetime_Begin and Datetime_End
+
+RETURN @rez*(SELECT Price FROM Products WHERE ID_Product=@id)
+END
+GO
