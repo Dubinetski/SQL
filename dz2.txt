@@ -1,0 +1,72 @@
+Написать запросы к базе данных интернет-магазина, которые:
+
+1.	Возвращает все продукты бренда LG весом более 1 кг.
+Формат вывода: название продукта, бренд, вес
+
+SELECT Products.Name as 'Product name', Brands.Name as 'Brand name', Products.Weight
+FROM Products JOIN Brands
+ON Products.ID_Brand = Brands.ID_Brand
+	AND Brands.Name = 'LG'
+	AND Products.Weight>1000
+	
+==================================================================	
+2.	Выводит всех клиентов женщин старше 30 лет
+Формат вывода: имя клиента, возраст
+
+SELECT FIO as 'Client', DateDiff(year, Date_of_birth, GETDATE()) as 'Age'
+FROM Clients
+WHERE DateDiff(year, Date_of_birth, GETDATE()) > 30
+	AND Is_Male = 'False'
+	
+=================================================================	
+3.	Выводит все холодильники, телевизоры и утюги.
+Формат вывода: название продукта, категория продукта, бренд 
+
+SELECT Products.Name as 'Product', Categories.Name as 'Category', Brands.Name as 'Brand'
+FROM Products
+	JOIN Categories 
+		ON Products.ID_Category=Categories.ID_Category
+			AND Categories.Name in ('Холодильники', 'Телевизоры', 'Утюги')
+	JOIN Brands
+		ON Products.ID_Brand = Brands.ID_Brand
+		
+=================================================================	
+4.	Возвращает количество продуктов в каждой из категорий для каждого цвета.
+Формат вывода: Название категории, название цвета, количество продуктов
+
+SELECT Categories.Name as 'Category', Colors.Name as 'Color', COUNT(Products.ID_Product) as 'Count products'
+FROM Categories
+	JOIN Products
+		ON Categories.ID_Category = Products.ID_Category
+	JOIN Colors
+		ON Products.ID_Color = Colors.ID_Color
+GROUP BY Categories.Name, Colors.Name
+ORDER BY Categories.Name, Colors.Name
+
+=================================================================	
+5.	Возвращает информацию о самом легком телевизоре.
+Формат вывода: Название продукта, Стоимость, Вес
+
+SELECT Name as 'Product', Price, Weight
+FROM Products
+WHERE Weight = (SELECT MIN(Weight)
+				FROM Products
+					JOIN Categories
+						ON Products.ID_Category = Categories.ID_Category
+							AND Categories.Name = 'Телевизоры')
+
+=================================================================	
+6.	Возвращает пользователей, которые совершали покупки в ноябре, но не совершали покупок в декабре
+Формат вывода: имя пользователя
+
+SELECT FIO
+FROM Clients JOIN Orders
+	ON Clients.ID_Client = Orders.ID_Client
+		AND MONTH(Orders.Datetime) = 11
+
+EXCEPT
+
+SELECT FIO
+FROM Clients JOIN Orders
+	ON Clients.ID_Client = Orders.ID_Client
+		AND MONTH(Orders.Datetime) = 12
